@@ -110,7 +110,7 @@ private:
         root->color = BLACK;
     }
 
-    // -------- PRINT TREE (ORIGINAL FORMAT, FIXED) --------
+    // -------- PRINT TREE --------
     void printHelper(Node* node, int indent) {
         if (!node) return;
 
@@ -122,10 +122,8 @@ private:
         for (int i = 6; i < indent; i++)
             cout << " ";
 
-        // EXACT original format: key + (R/B)
         cout << node->key << (node->color == RED ? "(R)" : "(B)");
 
-        // Add parent info WITHOUT affecting alignment
         cout << " [P:";
         if (node->parent)
             cout << node->parent->key;
@@ -139,7 +137,7 @@ private:
 public:
     RBTree() : root(nullptr) {}
 
-    // -------- INSERT A NEW KEY (1–999) --------
+    // -------- INSERT A NEW KEY --------
     void insert(int key) {
         if (key < 1 || key > 999) {
             cout << "Ignoring invalid key (must be 1–999): " << key << endl;
@@ -168,6 +166,42 @@ public:
             y->right = z;
 
         fixInsert(z);
+    }
+
+    // -------- SEARCH (INTERNAL) --------
+    Node* search(int key) {
+        Node* current = root;
+
+        while (current != nullptr) {
+            if (key == current->key)
+                return current;
+            else if (key < current->key)
+                current = current->left;
+            else
+                current = current->right;
+        }
+
+        return nullptr;
+    }
+
+    // -------- SEARCH (USER-FRIENDLY) --------
+    void searchValue(int key) {
+        Node* result = search(key);
+
+        if (result) {
+            cout << "Found " << key << " ("
+                 << (result->color == RED ? "RED" : "BLACK") << ")";
+
+            if (result->parent)
+                cout << " [Parent: " << result->parent->key << "]";
+            else
+                cout << " [Parent: None]";
+
+            cout << endl;
+        }
+        else {
+            cout << key << " not found in the tree.\n";
+        }
     }
 
     // -------- READ NUMBERS FROM FILE --------
@@ -204,7 +238,8 @@ int main() {
         cout << "1. Add numbers manually\n";
         cout << "2. Read numbers from numbers.txt\n";
         cout << "3. Print tree\n";
-        cout << "4. Quit\n";
+        cout << "4. Search for a number\n";
+        cout << "5. Quit\n";
         cout << "Selection: ";
 
         if (!(cin >> choice)) {
@@ -233,6 +268,12 @@ int main() {
             tree.print();
         }
         else if (choice == 4) {
+            int target;
+            cout << "Enter number to search for: ";
+            cin >> target;
+            tree.searchValue(target);
+        }
+        else if (choice == 5) {
             cout << "Goodbye.\n";
             break;
         }
