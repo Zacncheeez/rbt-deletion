@@ -229,6 +229,79 @@ public:
     }
 };
 
+    // -------- FIX TREE AFTER DELETE --------
+    void deleteFixup(Node* x) {
+        while (x != root && (x == nullptr || x->color == BLACK)) {
+            if (x == x->parent->left) {
+                Node* w = x->parent->right;
+
+                if (w->color == RED) {
+                    w->color = BLACK;
+                    x->parent->color = RED;
+                    rotateLeft(x->parent);
+                    w = x->parent->right;
+                }
+
+                if ((w->left == nullptr || w->left->color == BLACK) &&
+                    (w->right == nullptr || w->right->color == BLACK)) {
+                    w->color = RED;
+                    x = x->parent;
+                }
+                else {
+                    if (w->right == nullptr || w->right->color == BLACK) {
+                        if (w->left)
+                            w->left->color = BLACK;
+                        w->color = RED;
+                        rotateRight(w);
+                        w = x->parent->right;
+                    }
+
+                    w->color = x->parent->color;
+                    x->parent->color = BLACK;
+                    if (w->right)
+                        w->right->color = BLACK;
+                    rotateLeft(x->parent);
+                    x = root;
+                }
+            }
+            else {
+                Node* w = x->parent->left;
+
+                if (w->color == RED) {
+                    w->color = BLACK;
+                    x->parent->color = RED;
+                    rotateRight(x->parent);
+                    w = x->parent->left;
+                }
+
+                if ((w->right == nullptr || w->right->color == BLACK) &&
+                    (w->left == nullptr || w->left->color == BLACK)) {
+                    w->color = RED;
+                    x = x->parent;
+                }
+                else {
+                    if (w->left == nullptr || w->left->color == BLACK) {
+                        if (w->right)
+                            w->right->color = BLACK;
+                        w->color = RED;
+                        rotateLeft(w);
+                        w = x->parent->left;
+                    }
+
+                    w->color = x->parent->color;
+                    x->parent->color = BLACK;
+                    if (w->left)
+                        w->left->color = BLACK;
+                    rotateRight(x->parent);
+                    x = root;
+                }
+            }
+        }
+
+        if (x)
+            x->color = BLACK;
+    }
+
 int main() {
     RBTree tree;
     int choice;
