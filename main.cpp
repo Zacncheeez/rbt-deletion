@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <limits>
 using namespace std;
 
 enum Color { RED, BLACK };
@@ -62,35 +64,29 @@ private:
 
     // -------- FIX TREE AFTER INSERT --------
     void fixInsert(Node* z) {
-        // Continue fixing while parent is RED (violates RB rules)
         while (z->parent && z->parent->color == RED) {
-            Node* gp = z->parent->parent; // grandparent
+            Node* gp = z->parent->parent;
 
-            // Parent is left child of grandparent
             if (z->parent == gp->left) {
                 Node* uncle = gp->right;
 
-                // Case 1: Uncle is RED → recolor
                 if (uncle && uncle->color == RED) {
                     z->parent->color = BLACK;
                     uncle->color = BLACK;
                     gp->color = RED;
-                    z = gp; // move up the tree
+                    z = gp;
                 }
                 else {
-                    // Case 2: z is right child → rotate left
                     if (z == z->parent->right) {
                         z = z->parent;
                         rotateLeft(z);
                     }
-                    // Case 3: z is left child → rotate right
                     z->parent->color = BLACK;
                     gp->color = RED;
                     rotateRight(gp);
                 }
             }
             else {
-                // Mirror cases for right side
                 Node* uncle = gp->left;
 
                 if (uncle && uncle->color == RED) {
@@ -111,11 +107,10 @@ private:
             }
         }
 
-        // Root must always be BLACK
         root->color = BLACK;
     }
 
-    // -------- PRINT TREE (SIDEWAYS) --------
+    // -------- PRINT TREE (ORIGINAL FORMAT, FIXED) --------
     void printHelper(Node* node, int indent) {
         if (!node) return;
 
@@ -127,10 +122,11 @@ private:
         for (int i = 6; i < indent; i++)
             cout << " ";
 
-        // Show key, color, and parent key (or N for null)
-        cout << node->key
-             << (node->color == RED ? "(R)" : "(B)")
-             << " [P:";
+        // EXACT original format: key + (R/B)
+        cout << node->key << (node->color == RED ? "(R)" : "(B)");
+
+        // Add parent info WITHOUT affecting alignment
+        cout << " [P:";
         if (node->parent)
             cout << node->parent->key;
         else
@@ -154,7 +150,6 @@ public:
         Node* y = nullptr;
         Node* x = root;
 
-        // Standard BST insert
         while (x != nullptr) {
             y = x;
             if (z->key < x->key)
@@ -166,27 +161,27 @@ public:
         z->parent = y;
 
         if (!y)
-            root = z; // tree was empty
+            root = z;
         else if (z->key < y->key)
             y->left = z;
         else
             y->right = z;
 
-        // Fix Red-Black Tree properties
         fixInsert(z);
     }
 
     // -------- READ NUMBERS FROM FILE --------
     void readFromFile(const string& filename) {
         ifstream file(filename);
-        if (!file) {
+
+        if (!file.is_open()) {
             cout << "Error: Could not open " << filename << endl;
             return;
         }
 
         int value;
         while (file >> value) {
-            insert(value); // Insert each number from file
+            insert(value);
         }
 
         cout << "Finished reading from " << filename << endl;
@@ -206,21 +201,30 @@ int main() {
 
     while (true) {
         cout << "\n--- Red-Black Tree Menu ---\n";
-        cout << "1. Add a number\n";
+        cout << "1. Add numbers manually\n";
         cout << "2. Read numbers from numbers.txt\n";
         cout << "3. Print tree\n";
         cout << "4. Quit\n";
         cout << "Selection: ";
+
         if (!(cin >> choice)) {
             cout << "Invalid input. Exiting.\n";
             return 0;
         }
 
         if (choice == 1) {
+            cout << "Enter numbers separated by spaces (1–999). Press ENTER when done:\n";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            string line;
+            getline(cin, line);
+
+            stringstream ss(line);
             int value;
-            cout << "Enter a number (1–999): ";
-            cin >> value;
-            tree.insert(value);
+
+            while (ss >> value) {
+                tree.insert(value);
+            }
         }
         else if (choice == 2) {
             tree.readFromFile("numbers.txt");
