@@ -25,7 +25,8 @@ class RBTree {
 private:
     Node* root;
 
-    // -------- LEFT ROTATION --------
+    // Left Rotation
+    // Rotates the subtree so that x moves left and its right child moves up.
     void rotateLeft(Node* x) {
         Node* y = x->right;
         x->right = y->left;
@@ -46,7 +47,8 @@ private:
         x->parent = y;
     }
 
-    // -------- RIGHT ROTATION --------
+    // Right Rotation
+    // Rotates the subtree so that x moves right and its left child moves up.
     void rotateRight(Node* x) {
         Node* y = x->left;
         x->left = y->right;
@@ -67,14 +69,17 @@ private:
         x->parent = y;
     }
 
-    // -------- FIX TREE AFTER INSERT --------
+    // Fix Tree After Insert
+    // Restores Red-Black properties after inserting a red node.
     void fixInsert(Node* z) {
         while (z->parent && z->parent->color == RED) {
             Node* gp = z->parent->parent;
 
+            // Parent is left child of grandparent
             if (z->parent == gp->left) {
                 Node* uncle = gp->right;
 
+                // Case 1: Uncle is red → recolor
                 if (uncle && uncle->color == RED) {
                     z->parent->color = BLACK;
                     uncle->color = BLACK;
@@ -82,16 +87,19 @@ private:
                     z = gp;
                 }
                 else {
+                    // Case 2: Triangle shape → rotate
                     if (z == z->parent->right) {
                         z = z->parent;
                         rotateLeft(z);
                     }
+                    // Case 3: Line shape → rotate and recolor
                     z->parent->color = BLACK;
                     gp->color = RED;
                     rotateRight(gp);
                 }
             }
             else {
+                // Parent is right child of grandparent
                 Node* uncle = gp->left;
 
                 if (uncle && uncle->color == RED) {
@@ -115,30 +123,15 @@ private:
         root->color = BLACK;
     }
 
-    // -------- SEARCH (INTERNAL) --------
-    Node* search(int key) {
-        Node* current = root;
-
-        while (current != nullptr) {
-            if (key == current->key)
-                return current;
-            else if (key < current->key)
-                current = current->left;
-            else
-                current = current->right;
-        }
-
-        return nullptr;
-    }
-
-    // -------- TREE MINIMUM --------
+    // Find Minimum Node in Subtree
     Node* treeMinimum(Node* x) {
         while (x->left != nullptr)
             x = x->left;
         return x;
     }
 
-    // -------- TRANSPLANT --------
+    // Transplant Subtrees
+    // Replaces subtree u with subtree v.
     void rbTransplant(Node* u, Node* v) {
         if (u->parent == nullptr)
             root = v;
@@ -151,12 +144,14 @@ private:
             v->parent = u->parent;
     }
 
-    // -------- FIX TREE AFTER DELETE --------
+    // Fix Tree After Delete
+    // Restores Red-Black properties after removing a black node.
     void deleteFixup(Node* x) {
         while (x != root && (x == nullptr || x->color == BLACK)) {
             if (x == x->parent->left) {
                 Node* w = x->parent->right;
 
+                // Case 1: Sibling is red
                 if (w->color == RED) {
                     w->color = BLACK;
                     x->parent->color = RED;
@@ -164,12 +159,14 @@ private:
                     w = x->parent->right;
                 }
 
+                // Case 2: Both sibling's children are black
                 if ((w->left == nullptr || w->left->color == BLACK) &&
                     (w->right == nullptr || w->right->color == BLACK)) {
                     w->color = RED;
                     x = x->parent;
                 }
                 else {
+                    // Case 3: Sibling's right child is black
                     if (w->right == nullptr || w->right->color == BLACK) {
                         if (w->left)
                             w->left->color = BLACK;
@@ -178,6 +175,7 @@ private:
                         w = x->parent->right;
                     }
 
+                    // Case 4: Sibling's right child is red
                     w->color = x->parent->color;
                     x->parent->color = BLACK;
                     if (w->right)
@@ -187,6 +185,7 @@ private:
                 }
             }
             else {
+                // Mirror cases for right child
                 Node* w = x->parent->left;
 
                 if (w->color == RED) {
@@ -227,7 +226,7 @@ private:
 public:
     RBTree() : root(nullptr) {}
 
-    // -------- INSERT A NEW KEY --------
+    // Insert a New Key
     void insert(int key) {
         if (key < 1 || key > 999) {
             cout << "Ignoring invalid key (must be 1–999): " << key << endl;
@@ -238,6 +237,7 @@ public:
         Node* y = nullptr;
         Node* x = root;
 
+        // Standard BST insert
         while (x != nullptr) {
             y = x;
             if (z->key < x->key)
@@ -255,10 +255,27 @@ public:
         else
             y->right = z;
 
+        // Fix any RB violations
         fixInsert(z);
     }
 
-    // -------- DELETE A KEY --------
+    // Search for a Key (Internal)
+    Node* search(int key) {
+        Node* current = root;
+
+        while (current != nullptr) {
+            if (key == current->key)
+                return current;
+            else if (key < current->key)
+                current = current->left;
+            else
+                current = current->right;
+        }
+
+        return nullptr;
+    }
+
+    // Delete a Key
     void deleteNode(int key) {
         Node* z = search(key);
         if (!z) {
@@ -270,14 +287,17 @@ public:
         Node* x = nullptr;
         Color yOriginalColor = y->color;
 
+        // Case 1: No left child
         if (z->left == nullptr) {
             x = z->right;
             rbTransplant(z, z->right);
         }
+        // Case 2: No right child
         else if (z->right == nullptr) {
             x = z->left;
             rbTransplant(z, z->left);
         }
+        // Case 3: Two children → use successor
         else {
             y = treeMinimum(z->right);
             yOriginalColor = y->color;
@@ -301,13 +321,14 @@ public:
 
         delete z;
 
+        // Fix RB properties if needed
         if (yOriginalColor == BLACK)
             deleteFixup(x);
 
         cout << "Deleted " << key << endl;
     }
 
-    // -------- SEARCH (USER-FRIENDLY) --------
+    // Search Wrapper (User-Friendly)
     void searchValue(int key) {
         Node* result = search(key);
 
@@ -327,7 +348,7 @@ public:
         }
     }
 
-    // -------- READ NUMBERS FROM FILE --------
+    // Read Numbers from File
     void readFromFile(const string& filename) {
         ifstream file(filename);
 
@@ -344,7 +365,7 @@ public:
         cout << "Finished reading from " << filename << endl;
     }
 
-    // -------- PRINT TREE --------
+    // Print Helper (Recursive)
     void printHelper(Node* node, int indent) {
         if (!node) return;
 
@@ -368,6 +389,7 @@ public:
         printHelper(node->left, indent);
     }
 
+    // Print Entire Tree
     void print() {
         cout << "\n===== TREE =====\n";
         printHelper(root, 0);
