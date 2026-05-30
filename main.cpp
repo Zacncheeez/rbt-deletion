@@ -1,3 +1,8 @@
+/*
+I got some help from Luca Ardanaz for Red Black tree and he 
+shared his repo: https://github.com/LucaA777/RBT-Deletion
+*/
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -110,64 +115,6 @@ private:
         root->color = BLACK;
     }
 
-    // -------- PRINT TREE --------
-    void printHelper(Node* node, int indent) {
-        if (!node) return;
-
-        indent += 6;
-
-        printHelper(node->right, indent);
-
-        cout << endl;
-        for (int i = 6; i < indent; i++)
-            cout << " ";
-
-        cout << node->key << (node->color == RED ? "(R)" : "(B)");
-
-        cout << " [P:";
-        if (node->parent)
-            cout << node->parent->key;
-        else
-            cout << "N";
-        cout << "]";
-
-        printHelper(node->left, indent);
-    }
-
-public:
-    RBTree() : root(nullptr) {}
-
-    // -------- INSERT A NEW KEY --------
-    void insert(int key) {
-        if (key < 1 || key > 999) {
-            cout << "Ignoring invalid key (must be 1–999): " << key << endl;
-            return;
-        }
-
-        Node* z = new Node(key);
-        Node* y = nullptr;
-        Node* x = root;
-
-        while (x != nullptr) {
-            y = x;
-            if (z->key < x->key)
-                x = x->left;
-            else
-                x = x->right;
-        }
-
-        z->parent = y;
-
-        if (!y)
-            root = z;
-        else if (z->key < y->key)
-            y->left = z;
-        else
-            y->right = z;
-
-        fixInsert(z);
-    }
-
     // -------- SEARCH (INTERNAL) --------
     Node* search(int key) {
         Node* current = root;
@@ -184,50 +131,25 @@ public:
         return nullptr;
     }
 
-    // -------- SEARCH (USER-FRIENDLY) --------
-    void searchValue(int key) {
-        Node* result = search(key);
-
-        if (result) {
-            cout << "Found " << key << " ("
-                 << (result->color == RED ? "RED" : "BLACK") << ")";
-
-            if (result->parent)
-                cout << " [Parent: " << result->parent->key << "]";
-            else
-                cout << " [Parent: None]";
-
-            cout << endl;
-        }
-        else {
-            cout << key << " not found in the tree.\n";
-        }
+    // -------- TREE MINIMUM --------
+    Node* treeMinimum(Node* x) {
+        while (x->left != nullptr)
+            x = x->left;
+        return x;
     }
 
-    // -------- READ NUMBERS FROM FILE --------
-    void readFromFile(const string& filename) {
-        ifstream file(filename);
+    // -------- TRANSPLANT --------
+    void rbTransplant(Node* u, Node* v) {
+        if (u->parent == nullptr)
+            root = v;
+        else if (u == u->parent->left)
+            u->parent->left = v;
+        else
+            u->parent->right = v;
 
-        if (!file.is_open()) {
-            cout << "Error: Could not open " << filename << endl;
-            return;
-        }
-
-        int value;
-        while (file >> value) {
-            insert(value);
-        }
-
-        cout << "Finished reading from " << filename << endl;
+        if (v != nullptr)
+            v->parent = u->parent;
     }
-
-    // -------- PUBLIC PRINT --------
-    void print() {
-        cout << "\n===== TREE =====\n";
-        printHelper(root, 0);
-        cout << "\n================\n";
-    }
-};
 
     // -------- FIX TREE AFTER DELETE --------
     void deleteFixup(Node* x) {
@@ -302,6 +224,157 @@ public:
             x->color = BLACK;
     }
 
+public:
+    RBTree() : root(nullptr) {}
+
+    // -------- INSERT A NEW KEY --------
+    void insert(int key) {
+        if (key < 1 || key > 999) {
+            cout << "Ignoring invalid key (must be 1–999): " << key << endl;
+            return;
+        }
+
+        Node* z = new Node(key);
+        Node* y = nullptr;
+        Node* x = root;
+
+        while (x != nullptr) {
+            y = x;
+            if (z->key < x->key)
+                x = x->left;
+            else
+                x = x->right;
+        }
+
+        z->parent = y;
+
+        if (!y)
+            root = z;
+        else if (z->key < y->key)
+            y->left = z;
+        else
+            y->right = z;
+
+        fixInsert(z);
+    }
+
+    // -------- DELETE A KEY --------
+    void deleteNode(int key) {
+        Node* z = search(key);
+        if (!z) {
+            cout << key << " not found.\n";
+            return;
+        }
+
+        Node* y = z;
+        Node* x = nullptr;
+        Color yOriginalColor = y->color;
+
+        if (z->left == nullptr) {
+            x = z->right;
+            rbTransplant(z, z->right);
+        }
+        else if (z->right == nullptr) {
+            x = z->left;
+            rbTransplant(z, z->left);
+        }
+        else {
+            y = treeMinimum(z->right);
+            yOriginalColor = y->color;
+            x = y->right;
+
+            if (y->parent == z) {
+                if (x)
+                    x->parent = y;
+            }
+            else {
+                rbTransplant(y, y->right);
+                y->right = z->right;
+                y->right->parent = y;
+            }
+
+            rbTransplant(z, y);
+            y->left = z->left;
+            y->left->parent = y;
+            y->color = z->color;
+        }
+
+        delete z;
+
+        if (yOriginalColor == BLACK)
+            deleteFixup(x);
+
+        cout << "Deleted " << key << endl;
+    }
+
+    // -------- SEARCH (USER-FRIENDLY) --------
+    void searchValue(int key) {
+        Node* result = search(key);
+
+        if (result) {
+            cout << "Found " << key << " ("
+                 << (result->color == RED ? "RED" : "BLACK") << ")";
+
+            if (result->parent)
+                cout << " [Parent: " << result->parent->key << "]";
+            else
+                cout << " [Parent: None]";
+
+            cout << endl;
+        }
+        else {
+            cout << key << " not found in the tree.\n";
+        }
+    }
+
+    // -------- READ NUMBERS FROM FILE --------
+    void readFromFile(const string& filename) {
+        ifstream file(filename);
+
+        if (!file.is_open()) {
+            cout << "Error: Could not open " << filename << endl;
+            return;
+        }
+
+        int value;
+        while (file >> value) {
+            insert(value);
+        }
+
+        cout << "Finished reading from " << filename << endl;
+    }
+
+    // -------- PRINT TREE --------
+    void printHelper(Node* node, int indent) {
+        if (!node) return;
+
+        indent += 6;
+
+        printHelper(node->right, indent);
+
+        cout << endl;
+        for (int i = 6; i < indent; i++)
+            cout << " ";
+
+        cout << node->key << (node->color == RED ? "(R)" : "(B)");
+
+        cout << " [P:";
+        if (node->parent)
+            cout << node->parent->key;
+        else
+            cout << "N";
+        cout << "]";
+
+        printHelper(node->left, indent);
+    }
+
+    void print() {
+        cout << "\n===== TREE =====\n";
+        printHelper(root, 0);
+        cout << "\n================\n";
+    }
+};
+
 int main() {
     RBTree tree;
     int choice;
@@ -312,7 +385,8 @@ int main() {
         cout << "2. Read numbers from numbers.txt\n";
         cout << "3. Print tree\n";
         cout << "4. Search for a number\n";
-        cout << "5. Quit\n";
+        cout << "5. Delete a number\n";
+        cout << "6. Quit\n";
         cout << "Selection: ";
 
         if (!(cin >> choice)) {
@@ -347,6 +421,12 @@ int main() {
             tree.searchValue(target);
         }
         else if (choice == 5) {
+            int target;
+            cout << "Enter number to delete: ";
+            cin >> target;
+            tree.deleteNode(target);
+        }
+        else if (choice == 6) {
             cout << "Goodbye.\n";
             break;
         }
